@@ -23,7 +23,7 @@ var articleSchema = new Schema({
         ref: "User",
         required: true
     },
-    favorites: {
+    favoritesCount: {
         type: Number,
         default: 0
     },
@@ -32,7 +32,7 @@ var articleSchema = new Schema({
         ref: "Comment",
     }],
 
-    readersFavorited: [{
+    favorited: [{
         type: Schema.Types.ObjectId,
         ref: "User",
     }],

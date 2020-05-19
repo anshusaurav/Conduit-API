@@ -26,7 +26,8 @@ router.post('/', auth.verifyToken, async(req, res, next) =>{
         console.log(req.body.article);
         var newArticle = await (await Article.create(req.body.article)).populate('author');
         console.log(newArticle);
-        res.status(201).json({
+        var updatedUser = await User.findByIdAndUpdate(user.id, {$push: {articles: newArticle.id}});
+        return res.status(201).json({
             article: {
                 slug: newArticle.slug,
                 title: newArticle.title,
@@ -51,9 +52,45 @@ router.post('/', auth.verifyToken, async(req, res, next) =>{
         return res.status(401).json({
             success: false,
             error: "Bad Request"
-          })
+        })
     }
 });
 
+router.get('/:slug', async(req, res, next) =>{
+    try{
+        console.log(req.params.slug);
+        var foundArticle = await Article.findOne({slug: req.params.slug})
+                                        .populate('author');
+       
+        console.log('foundArticle',foundArticle);
+        return res.status(200).json({
+            article: {
+                slug: foundArticle.slug,
+                title: foundArticle.title,
+                description: foundArticle.description,
+                body: foundArticle.body,
+                tagList: foundArticle.tagList,
+                createdAt: foundArticle.createdAt,
+                updatedAt: foundArticle.updatedAt,
+                favorited: foundArticle.favorited,
+                favoritesCount: foundArticle.favoritesCount,
+                author: {
+                    username: foundArticle.author.username,
+                    bio: foundArticle.author.bio,
+                    image: foundArticle.author.image,
+                    following: true,
+                }
+            }
+            
+        });
+
+    }
+    catch(error){
+        return res.status(401).json({
+            success: false,
+            error: "Bad Request"
+        })
+    }
+});
 
 module.exports = router;

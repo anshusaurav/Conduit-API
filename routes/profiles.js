@@ -9,7 +9,7 @@ var auth = require('../middlewares/auth');
  * Get a profile of a user of the system. Auth is optional
  */
 router.get('/:username', async (req, res, next) => {
-  console.log('INIt',req.params.username);
+  // console.log('INIt',req.params.username);
   try{
     var user = await User.findOne({username:req.params.username});
     var following = false;
