@@ -7,6 +7,9 @@ var articleSchema = new Schema({
         type: String,
         required: true,
     },
+    slug:{
+        type: String
+    },
     description: {
         type: String,
         required: true,
@@ -33,7 +36,7 @@ var articleSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "User",
     }],
-    tags: [String]
+    tagList: [String]
     
 },{timestamps: true});
 
