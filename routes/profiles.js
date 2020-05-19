@@ -1,28 +1,20 @@
 var express = require('express');
 var router = express.Router();
 var User = require('../models/user');
-var auth = require('../middlewares/auth');
 
 
-//
-// {
-//   "profile": {
-//     "username": "jake",
-//     "bio": "I work at statefarm",
-//     "image": "https://static.productionready.io/images/smiley-cyrus.jpg",
-//     "following": false
-//   }
-// }
+
+/**
+ * Get a profile of a user of the system. Auth is optional
+ */
 router.get('/:username', async (req, res, next) => {
-  console.log(req.params.username);
+  console.log('INIt',req.params.username);
   try{
-    console.log('Here');
-    var user = await User.findOne({username: req.params.username});
+    var user = await User.findOne({username:req.params.username});
     var following = false;
-    let loggedInUser = await User.findById(req.user.userId);
-    console.log('LoggedInUser')
-    console.log(loggedInUser);
-    console.log(user);
+    var loggedInUser;
+    if(req.user)
+      loggedInUser = await User.findById(req.user.userId);
     if(!loggedInUser) {
       res.status(200).json(
         {
@@ -31,12 +23,11 @@ router.get('/:username', async (req, res, next) => {
             bio: user.bio,
             image: user.image,
             following
-            
           }
         }
       );
     }
-    else{
+    else {
       if(loggedInUser.following.includes(user.id)){
         following = true;
       }
@@ -47,21 +38,56 @@ router.get('/:username', async (req, res, next) => {
             bio: user.bio,
             image: user.image,
             following
-            
           }
         }
       );
     }
+    }
+    catch(err){
+      return res.status(400).json({
+            success: false,
+            error: "Unexpected error"
+      })
   }
-  catch(error) {
-    return res.status(400).json({
-      success: false,
-      error: "Unexpected error"
-    })
-  }
-    
 });
 
+/**
+ * Follow a user by username
+ */
+router.get('/:username/follow', auth.verifyToken, async (req, res, next) => {
+  try{
+    var user = await User.findOne({username:req.params.username});
+    var loggedInUser = await User.findById(req.user.userId);
+    if(!loggedInUser) {
+      return res.status(401).json({
+        success: false,
+        error: "UnAuthorized"
+      });
+    }
+    else {
+      user = await User.findOneAndUpdate({username: req.params.username}, 
+        {$addToSet : {followers : req.user.userId} },
+        {new: true});
+      loggedInUser = await User.findByIdAndUpdate(req.user.userId, {$addToSet : {following : user.userId} },
+        {new: true});
+      res.status(200).json(
+        {
+          profile:{
+            username: user.username,
+            bio: user.bio,
+            image: user.image,
+            following
+          }
+        }
+      );
+    }
+    }
+    catch(err){
+      return res.status(400).json({
+            success: false,
+            error: "Unexpected error"
+      })
+  }
 
-
+});
 module.exports = router;

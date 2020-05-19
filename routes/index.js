@@ -7,9 +7,7 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 router.get('/api/user', auth.verifyToken, async function(req, res, next) {
-    console.log('HERE', req.user);
-
-    // console.log(req.headers);
+    
     try{
       var user = await User.findById(req.user.userId);
       res.status(201).json(
