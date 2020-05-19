@@ -1,15 +1,9 @@
-// function convertToSlug(Text)
-// {
-//     return Text
-//         .toLowerCase()
-//         .replace(/ /g,'-')
-//         .replace(/[^\w-]+/g,'')
-//         ;
-// }
+
 var express = require('express');
 var router = express.Router();
 var Article = require('../models/article');
 var User = require('../models/user');
+var Comment = require('../models/comment');
 var auth = require('../middlewares/auth');
 
 /**
@@ -94,7 +88,9 @@ router.get('/:slug', async(req, res, next) =>{
         })
     }
 });
-
+/**
+ * Update an article. Auth is required
+ */
 router.put('/:slug', auth.verifyToken, async(req, res, next) =>{
     //Need to verify is user is same as author otherwise relevant error status code
     var slug  = req.params.slug;
@@ -106,7 +102,7 @@ router.put('/:slug', auth.verifyToken, async(req, res, next) =>{
     console.log(title, description, body);
     try{
         if (title || description || body){
-            console.log('Entered');
+            // console.log('Entered');
             if(title){
                 var article = await Article.findOneAndUpdate({slug}, {$set: {title}});
                 var newslug = article.title.toLowerCase()
@@ -124,7 +120,7 @@ router.put('/:slug', auth.verifyToken, async(req, res, next) =>{
             var foundArticle = await Article.findOne({slug})
                                         .populate('author');
        
-            console.log('foundArticle',foundArticle);
+            // console.log('foundArticle',foundArticle);
             return res.status(200).json({
                 article: {
                     slug: foundArticle.slug,
@@ -146,27 +142,32 @@ router.put('/:slug', auth.verifyToken, async(req, res, next) =>{
                 
             });
         }
-            
         else{
-            
             return next(err);
         }
     }
     catch(error){
-        return res.status(401).json({
+        return res.status(422).json({
             success: false,
             error: "Bad Request"
         })
     }
 });
 
+/**
+ * Delete an article. Auth is required
+ */
 router.delete('/:slug', auth.verifyToken, async(req, res, next) =>{
     var {slug} = req.params;
     var article = await Article.findOne({slug});
-    var author = await User.findById(article.author);
     console.log(article.author);
-    let loggedInUser = await User.findById(req.user.userId);
-    console.log(loggedInUser.id);
+    console.log(req.user.userId);
+    if(!loggedInUser){
+        return res.status(401).json({
+            success: false,
+            error: "Not authorized"
+        })
+    }
     if(loggedInUser.id !== article.author)
     {
         return res.status(401).json({
@@ -177,8 +178,36 @@ router.delete('/:slug', auth.verifyToken, async(req, res, next) =>{
     try{
         var article = await Article.findOneAndRemove({slug});
         let updatedUser = await User.findByIdAndUpdate(article.author, {$pull : {articles: article.id}});
+        return res.status(204).json({
+            success: true,
+            message: "Successfully deleted"
+        });
     }
     catch(error) {
+        return res.status(400).json({
+            success: false,
+            error: "Bad Request"
+        })
+    }
+});
+/**
+ * Create a comment for an article. Auth is required
+ */
+router.post('/articles/:slug/comments', auth.verifyToken, async(req, res, next) =>{
+    var {slug} = req.params;
+    // console.log()
+    try{
+        let user = await User.findById(req.user.userId);
+        let article = await Article.findOne({slug});
+        let comment = {
+            body: req.body.comment.author,
+            author: user.id,
+            article: article.id
+        };
+        let commentCreated = await Comment.create(comment);
+
+    }
+    catch(error){
         return res.status(400).json({
             success: false,
             error: "Bad Request"
