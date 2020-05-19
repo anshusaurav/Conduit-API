@@ -27,10 +27,4 @@ router.get('/api/user', auth.verifyToken, async function(req, res, next) {
   // res.render('index', { title: 'Express' });
 });
 
-router.get('/api/profile/:username', async (req, res, next) =>{
-  var user = await User.findOne({username: req.params.username});
-  res.json({
-    'success': true
-  })
-});
 module.exports = router;

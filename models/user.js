@@ -19,14 +19,34 @@ var userSchema = new Schema({
     },
     bio: String,
     image: String,
+    articles: [{
+        type: Schema.Types.ObjectId,
+        ref: "Article",
+    }],
+    comments: [{
+        type: Schema.Types.ObjectId,
+        ref: "Comment",
+    }],
+
+    favoriteArticles: [{
+        type: Schema.Types.ObjectId,
+        ref: "Article",
+    }],
+
+    followers: [{
+        type: Schema.Types.ObjectId,
+        ref: "User"
+    }],
+    following: [{
+        type: Schema.Types.ObjectId,
+        ref: "User"
+    }]
 
 }, {timestamps: true});
 userSchema.pre('save', async function(next){
-    console.log(this, 'Presave hook');
     try{
         if(this.password && this.isModified('password')) {
             this.password = await hash(this.password, 10);
-            console.log(this);
             return next();
         }
     }
@@ -37,10 +57,5 @@ userSchema.pre('save', async function(next){
 
 userSchema.methods.verifyPassword = async function(pwd) {
     return await compare(pwd, this.password); 
-    // console.log(match);
-    // if(match)
-    //     return true;    
-    // else 
-    //     return false;
 }
 module.exports = mongoose.model("User", userSchema);

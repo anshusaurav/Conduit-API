@@ -19,7 +19,7 @@ exports.verifyToken = async (req, res, next) =>{
             console.log(payload);
             var user = {
                 userId: payload.userId,
-                token = token
+                token: token
             };
             req.user = user;
             // req.userId = payload.userId;
