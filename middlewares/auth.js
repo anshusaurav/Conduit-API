@@ -22,7 +22,7 @@ exports.verifyToken = async (req, res, next) =>{
                 token: token
             };
             req.user = user;
-            // req.userId = payload.userId;
+            next();
         }
         else{
             return res.status(401).json({
@@ -32,6 +32,9 @@ exports.verifyToken = async (req, res, next) =>{
         }
     }
     catch(error){
-        next(error);
+        return res.status(422).json({
+            success: false,
+            error: "Unexpected error"
+        });
     }
 };

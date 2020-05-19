@@ -7,8 +7,9 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 router.get('/api/user', auth.verifyToken, async function(req, res, next) {
-    console.log(req.userId);
-    console.log(req.headers);
+    console.log('HERE', req.user);
+
+    // console.log(req.headers);
     try{
       var user = await User.findById(req.user.userId);
       res.status(201).json(
@@ -16,15 +17,19 @@ router.get('/api/user', auth.verifyToken, async function(req, res, next) {
           user:{
             email: user.email,
             username: user.username,
-            token: req.user.token
+            token: req.user.token,
+            bio: user.bio||"",
+            image: user.image||"",
           }
         }
       );
     }
     catch(err){
-
+      return res.status(400).json({
+        success: false,
+        error: "Invalid password"
+      })
     }
-  // res.render('index', { title: 'Express' });
 });
 
 module.exports = router;
