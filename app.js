@@ -6,6 +6,7 @@ var mongoose = require('mongoose');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var profilesRouter = require('./routes/profiles');
+var articlesRouter = require('./routes/articles');
 
 mongoose.connect('mongodb://localhost/conduit-db',
 {useNewUrlParser: true, useUnifiedTopology: true},
@@ -24,6 +25,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/profiles', profilesRouter);
+app.use('/api/articles', articlesRouter);
 
 
 
