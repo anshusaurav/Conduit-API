@@ -301,4 +301,73 @@ router.delete('/:slug/comments/:id',auth.verifyToken, async(req, res, next) =>{
     }
 
 });
+
+/**
+ * Favorite an article. Auth is required
+ */
+
+ router.post('/:slug/favorite', auth.verifyToken, async(req, res, next) =>{
+    var {slug} = req.params;
+    try{
+        var article = await Article.findOne({slug});
+        var user = await User.findByIdAndUpdate(req.user.userId, {$addToSet: {favoriteArticles: article.id}});
+        article = await Article.findOneAndUpdate({slug}, {$addToSet:{favorited: user.id}}, {new: true} );
+        article = await Article.findOneAndUpdate({slug}, {$inc :{favoritesCount: 1}},{new: true} );
+        article = await Article.findOne({slug}).populate('author');
+        
+        res.status(200).json({
+            article:{
+                slug: article.slug,
+                title: article.title,
+                description: article.description,
+                body: article.body,
+                tagList: article.tagList,
+                createdAt: article.createdAt,
+                updatedAt: article.updatedAt,
+                favorited: true,
+                favoritesCount: article.favoritesCount,
+                author:{
+                    username: article.author.username,
+                    bio: article.author.bio,
+                    image: article.author.image,
+                    following: true
+                }
+            }
+        })
+    }catch(error){
+        return res.status(422).json({
+            success: false,
+            error: "Bad Request"
+        })
+    }
+ });
+
+
+ 
+/**
+ * Unfavorite an article. Auth is required
+ */
+
+router.delete('/:slug/favorite', auth.verifyToken, async(req, res, next) =>{
+    var {slug} = req.params;
+    try{
+        var article = await Article.findOne({slug});
+        var user = await User.findByIdAndUpdate(req.user.userId, {$pull: {favoriteArticles: article.id}});
+        article = await Article.findOneAndUpdate({slug}, {$pull:{favorited: user.id}}, {new: true} );
+        article = await Article.findOneAndUpdate({slug}, {$inc :{favoritesCount: -1}},{new: true} );
+        article = await Article.findOne({slug}).populate('author');
+        
+        return res.status(200).json({
+            success: true,
+            message: "Successfully unfavorited"
+        })
+    }catch(error){
+        return res.status(422).json({
+            success: false,
+            error: "Bad Request"
+        })
+    }
+ });
+
+ 
 module.exports = router;

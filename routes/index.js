@@ -29,5 +29,22 @@ router.get('/api/user', auth.verifyToken, async function(req, res, next) {
       })
     }
 });
-
+router.get('/tag', async(req, res, next) =>{
+  try{
+    var tags = await Tag.find();
+    var res = [];
+    tags.forEach(elem =>{
+      res.push(elem.tagname);
+    });
+    return res.status(200).json({
+      tags: ret
+  });
+  }
+  catch(error) {
+    return res.status(400).json({
+      success: false,
+      error: "Bad Request"
+    })
+  }
+});
 module.exports = router;
