@@ -160,21 +160,13 @@ router.put('/:slug', auth.verifyToken, async(req, res, next) =>{
 router.delete('/:slug', auth.verifyToken, async(req, res, next) =>{
     var {slug} = req.params;
     var article = await Article.findOne({slug});
-    console.log(article.author);
-    console.log(req.user.userId);
-    if(!loggedInUser){
+    if(req.user.userId != article.author){
         return res.status(401).json({
             success: false,
             error: "Not authorized"
         })
     }
-    if(loggedInUser.id !== article.author)
-    {
-        return res.status(401).json({
-            success: false,
-            error: "Not authorized"
-        })
-    }
+    
     try{
         var article = await Article.findOneAndRemove({slug});
         let updatedUser = await User.findByIdAndUpdate(article.author, {$pull : {articles: article.id}});
@@ -193,22 +185,37 @@ router.delete('/:slug', auth.verifyToken, async(req, res, next) =>{
 /**
  * Create a comment for an article. Auth is required
  */
-router.post('/articles/:slug/comments', auth.verifyToken, async(req, res, next) =>{
+router.post('/:slug/comments', auth.verifyToken, async(req, res, next) =>{
     var {slug} = req.params;
     // console.log()
     try{
         let user = await User.findById(req.user.userId);
         let article = await Article.findOne({slug});
+        // console.log(user, article);
         let comment = {
             body: req.body.comment.author,
             author: user.id,
             article: article.id
         };
         let commentCreated = await Comment.create(comment);
-
+        console.log(commentCreated);
+        return res.status(200).json({
+            comment: {
+                id: commentCreated.id,
+                createdAt: commentCreated.createdAt,
+                updatedAt: commentCreated.updatedAt,
+                body: commentCreated.body,
+                author:{
+                    username: user.username,
+                    bio: user.bio,
+                    image: user.image,
+                    following: true
+                }
+            }
+        });
     }
     catch(error){
-        return res.status(400).json({
+        return res.status(422).json({
             success: false,
             error: "Bad Request"
         })
