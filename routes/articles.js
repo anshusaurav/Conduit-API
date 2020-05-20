@@ -159,15 +159,16 @@ router.put('/:slug', auth.verifyToken, async(req, res, next) =>{
  */
 router.delete('/:slug', auth.verifyToken, async(req, res, next) =>{
     var {slug} = req.params;
-    var article = await Article.findOne({slug});
-    if(req.user.userId != article.author){
-        return res.status(401).json({
-            success: false,
-            error: "Not authorized"
-        })
-    }
-    
     try{
+        var article = await Article.findOne({slug});
+        if(req.user.userId != article.author){
+            return res.status(401).json({
+                success: false,
+                error: "Not authorized"
+            })
+        }
+    
+    
         var article = await Article.findOneAndRemove({slug});
         let updatedUser = await User.findByIdAndUpdate(article.author, {$pull : {articles: article.id}});
         return res.status(204).json({
@@ -189,16 +190,19 @@ router.post('/:slug/comments', auth.verifyToken, async(req, res, next) =>{
     var {slug} = req.params;
     // console.log()
     try{
-        let user = await User.findById(req.user.userId);
-        let article = await Article.findOne({slug});
+        var user = await User.findById(req.user.userId);
+        var article = await Article.findOne({slug});
         // console.log(user, article);
-        let comment = {
-            body: req.body.comment.author,
+        var comment = {
+            body: req.body.comment.body,
             author: user.id,
             article: article.id
         };
-        let commentCreated = await Comment.create(comment);
-        console.log(commentCreated);
+        // console.log(comment);
+        var commentCreated = await Comment.create(comment);
+        article = await Article.findByIdAndUpdate(article.id, {$push: {comments: commentCreated.id}});
+        user = await User.findByIdAndUpdate(user.id, {$push: {comments: commentCreated.id}});
+        // console.log(commentCreated);
         return res.status(200).json({
             comment: {
                 id: commentCreated.id,
@@ -220,5 +224,81 @@ router.post('/:slug/comments', auth.verifyToken, async(req, res, next) =>{
             error: "Bad Request"
         })
     }
+});
+/**
+ * Get the comments for an article. Auth is optional
+ */
+router.get('/:slug/comments', async(req, res, next) =>{
+    var {slug} = req.params;
+    console.log('Get comments');
+    try{
+        var article =await Article.findOne({slug})
+                                  .populate({
+                            path:"comments",
+                            populate:{
+                                path:"author"
+                            }
+                        }
+        ); 
+        var ret = [];
+        console.log(article.comments.length);
+        article.comments.forEach(elem =>{
+            console.log('update',elem.updatedAt);
+            ret.push({
+                id: elem.id,
+                createdAt: elem.createdAt,
+                updatedAt: elem.updatedAt,
+                body: elem.body,
+                author:{
+                    username: elem.author.username,
+                    bio: elem.author.bio,
+                    image: elem.author.image,
+                    following: true
+                }
+
+            })
+        });
+        console.log(ret);   
+        return res.status(200).json({
+            comments: ret
+        });
+
+    }catch(error){
+        return res.status(422).json({
+            success: false,
+            error: "Bad Request"
+        })
+    }
+});
+
+/**
+ * Delete a comment for an article. Auth is required
+ */
+router.delete('/:slug/comments/:id',auth.verifyToken, async(req, res, next) =>{
+    var {slug} = req.params;
+    try{
+        var article = await Article.findOne({slug});
+        var comment = await Comment.findById(req.params.id);
+       
+        if(req.user.userId != comment.author){
+            return res.status(401).json({
+                success: false,
+                error: "Not authorized"
+            })
+        }
+        var deletedComment = await Comment.findByIdAndDelete(req.params.id);
+        var user = await User.findByIdAndUpdate(comment.author, {$pull: {comments: comment.id}});
+        article = await Article.findOneAndUpdate({slug}, {$pull: {comments: comment.id}});
+        return res.status(204).json({
+            success: true,
+            message: "Successfully deleted comment"
+        })
+    }catch(error){
+        return res.status(422).json({
+            success: false,
+            error: "Bad Request"
+        })
+    }
+
 });
 module.exports = router;
