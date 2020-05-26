@@ -51,6 +51,8 @@ router.post('/login', async function(req, res, next) {
     var token  = await auth.generateJWT(foundUser);  //.generateJWT either returns token or error
     console.log(token)
     res.status(200).json({
+      email: user.email,
+      id = user.id,
       username: foundUser.username,
       token,
     })
@@ -59,5 +61,32 @@ router.post('/login', async function(req, res, next) {
     next(error);
   }
 
+});
+
+/**
+ * Gets the currently logged-in user
+ */
+router.get('/', auth.verifyToken, async (req, res, next) =>{
+  try {
+    var user = await User.findById(req.user.userId);
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+});
+/**
+ * Updated user information for current user
+ */
+router.put('/', auth.verifyToken, async(req, res, next) =>{
+  try {
+    var updatedUser = await User.findByIdAndUpdate(
+      req.user.userId,
+      req.body.user,
+      { new: true }
+    );
+    res.json({ updatedUser });
+  } catch (error) {
+    next(error);
+  }
 });
 module.exports = router;

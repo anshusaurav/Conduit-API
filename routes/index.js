@@ -29,10 +29,11 @@ router.get('/api/user', auth.verifyToken, async function(req, res, next) {
       })
     }
 });
-router.get('/tag', async(req, res, next) =>{
+router.get('/api/tags', async(req, res, next) =>{
   try{
     var tags = await Tag.find();
     var res = [];
+    console.log('HERE bro',tags.length);
     tags.forEach(elem =>{
       res.push(elem.tagname);
     });
