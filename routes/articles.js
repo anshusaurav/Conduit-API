@@ -6,6 +6,64 @@ var User = require('../models/user');
 var Comment = require('../models/comment');
 var auth = require('../middlewares/auth');
 
+
+/**
+ * Get recent articles from users you follow
+ */
+router.get('/feed', auth.verifyToken, async (req, res, next) => {
+    try {
+      let user = await User.findById(req.user.userId);
+      let articles = await Article.find({ author: { $in: user.following } })
+        .sort({ updatedAt: -1 })
+        .limit(2);
+      res.json({ articles });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+
+/**
+ * Get recent articles globally 
+ */  
+router.get('/', async(req, res, next) =>{
+    try {
+        if (req.query.author) {
+          let authorUser = await User.findOne({ username: req.query.author });
+          let articles = await Article.find({ author: authorUser.id }).populate({
+            path: "author",
+            select: "username bio",
+          });
+          res.json({ articles });
+        } else if (req.query.tag) {
+          let articles = await Article.find({ tags: req.query.tag }).populate({
+            path: "author",
+            select: "username bio",
+          });
+          res.json({ articles });
+        } else if (req.query.favorited) {
+          let user = await User.findOne({ username: req.query.favorited });
+          let articles = await Article.find({ favorited: user.id })
+            .populate({ path: "author", select: "username bio" })
+            .exec();
+          res.json({ articles });
+        } else if (req.query.limit) {
+          let articles = await Article.find({})
+            .populate({ path: "author", select: "username bio" })
+            .limit(Number(req.query.limit));
+          res.json({ articles });
+        } else {
+          let articles = await Article.find({})
+            .populate({ path: "author", select: { username: 1, bio: 1 } })
+            .sort({ updatedAt: -1 });
+          res.json({ articles });
+        }
+      } catch (error) {
+        next(error);
+      }
+    };
+    
+});
 /**
  * Create an article. Auth is required
  */
